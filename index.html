@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Whole Year Puzzle</title>
+  <style>
+    :root {
+      --bg-color: #f4ede2;
+      --board-bg: #e6cca0;
+      --board-border: #8b5a2b;
+      --cell-bg: #f5e6ce;
+      --cell-text: #4a2c11;
+      --accent: #5c3a21;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1 {
+      color: var(--board-border);
+      margin-bottom: 5px;
+      font-family: 'Georgia', serif;
+    }
+
+    .controls {
+      background: #fff;
+      padding: 15px 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    select, button {
+      padding: 8px 14px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    select {
+      background: #fff;
+      cursor: pointer;
+    }
+
+    button {
+      background-color: var(--board-border);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--accent);
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .board-container {
+      background-color: var(--board-bg);
+      border: 12px solid var(--board-border);
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      display: inline-block;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(7, 50px);
+      grid-template-rows: repeat(7, 50px);
+      gap: 4px;
+    }
+
+    .cell {
+      width: 50px;
+      height: 50px;
+      background-color: var(--cell-bg);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: var(--cell-text);
+      font-size: 0.95rem;
+      box-shadow: inset 0 0 2px rgba(0,0,0,0.1);
+      transition: transform 0.2s, background-color 0.2s;
+      user-select: none;
+    }
+
+    .cell.empty {
+      visibility: hidden;
+    }
+
+    .cell.selected {
+      background-color: #e74c3c !important;
+      color: white !important;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.4);
+      transform: scale(0.95);
+    }
+
+    /* Distinct colors for each wood shape */
+    .p-0 { background-color: #8D6E63; color: white; }
+    .p-1 { background-color: #A1887F; color: white; }
+    .p-2 { background-color: #795548; color: white; }
+    .p-3 { background-color: #6D4C41; color: white; }
+    .p-4 { background-color: #5D4037; color: white; }
+    .p-5 { background-color: #4E342E; color: white; }
+    .p-6 { background-color: #BCAAA4; color: #333; }
+    .p-7 { background-color: #3E2723; color: white; }
+
+    .bottom-panel {
+      margin-top: 20px;
+      background: white;
+      padding: 15px 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      text-align: center;
+      min-width: 300px;
+    }
+
+    .nav-solutions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 10px;
+    }
+
+    .nav-arrow {
+      font-size: 1.5rem;
+      padding: 4px 12px;
+      line-height: 1;
+    }
+
+    .stars {
+      color: #f39c12;
+      font-size: 1.4rem;
+      margin-top: 5px;
+    }
+
+    .status-msg {
+      font-style: italic;
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>The Whole Year Puzzle</h1>
+
+  <div class="controls">
+    <div>
+      <label for="month-select">Month:</label>
+      <select id="month-select"></select>
+    </div>
+    <div>
+      <label for="day-select">Day:</label>
+      <select id="day-select"></select>
+    </div>
+    <button id="solve-btn">Solve</button>
+    <button id="next-btn">Next Day</button>
+  </div>
+
+  <div class="board-container">
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <div class="bottom-panel">
+    <div class="nav-solutions">
+      <button id="prev-sol" class="nav-arrow">&larr;</button>
+      <span id="solution-count">Solution 0 of 0</span>
+      <button id="next-sol" class="nav-arrow">&rarr;</button>
+    </div>
+    <div>
+      Difficulty: <span id="star-rating" class="stars">☆☆☆☆☆</span>
+    </div>
+    <div id="status" class="status-msg">Select a date and click "Solve"</div>
+  </div>
+
+  <script>
+    const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+    // Board layout based on image (7x7 grid)
+    // -1 = Empty space/outer frame
+    const BOARD_LAYOUT = [
+      ["Jan", "Feb", "Mar", "Apr", "May", "Jun", -1],
+      ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec", -1],
+      [1,     2,     3,     4,     5,     6,     7],
+      [8,     9,     10,    11,    12,    13,    14],
+      [15,    16,    17,    18,    19,    20,    21],
+      [22,    23,    24,    25,    26,    27,    28],
+      [-1,    -1,    29,    30,    31,    -1,    -1]
+    ];
+
+    // The 8 Polyomino Pieces in the physical puzzle
+    const RAW_PIECES = [
+      // 1. Cross / Plus (5 tiles)
+      [[0,1],[1,0],[1,1],[1,2],[2,1]],
+      // 2. Corner L 3x3 (5 tiles)
+      [[0,0],[1,0],[2,0],[2,1],[2,2]],
+      // 3. Rectangle 2x3 (6 tiles)
+      [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]],
+      // 4. Large L (5 tiles)
+      [[0,0],[1,0],[2,0],[3,0],[3,1]],
+      // 5. T-Shape (5 tiles)
+      [[0,0],[0,1],[0,2],[1,1],[2,1]],
+      // 6. U / C-Shape (5 tiles)
+      [[0,0],[0,2],[1,0],[1,1],[1,2]],
+      // 7. Z / N-Shape (5 tiles)
+      [[0,0],[1,0],[1,1],[1,2],[2,2]],
+      // 8. Corner L 2x2 with extension / Step (5 tiles)
+      [[0,0],[1,0],[1,1],[2,1],[2,2]]
+    ];
+
+    let currentSolutions = [];
+    let currentSolutionIndex = 0;
+
+    // UI Elements
+    const monthSelect = document.getElementById('month-select');
+    const daySelect = document.getElementById('day-select');
+    const solveBtn = document.getElementById('solve-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const gridEl = document.getElementById('grid');
+    const solutionCountEl = document.getElementById('solution-count');
+    const prevSolBtn = document.getElementById('prev-sol');
+    const nextSolBtn = document.getElementById('next-sol');
+    const starRatingEl = document.getElementById('star-rating');
+    const statusEl = document.getElementById('status');
+
+    // Populate Select Dropdowns
+    MONTHS.forEach((m, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = m;
+      monthSelect.appendChild(opt);
+    });
+
+    function updateDayDropdown() {
+      const selectedMonth = parseInt(monthSelect.value);
+      const maxDays = DAYS_IN_MONTH[selectedMonth];
+      const curDay = parseInt(daySelect.value) || 1;
+      
+      daySelect.innerHTML = '';
+      for (let i = 1; i <= maxDays; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = i;
+        daySelect.appendChild(opt);
+      }
+      daySelect.value = Math.min(curDay, maxDays);
+    }
+
+    monthSelect.addEventListener('change', updateDayDropdown);
+    updateDayDropdown();
+
+    // Render Blank Board
+    function renderBoard(placements = null, targetMonth = null, targetDay = null) {
+      gridEl.innerHTML = '';
+      for (let r = 0; r < 7; r++) {
+        for (let c = 0; c < 7; c++) {
+          const val = BOARD_LAYOUT[r][c];
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+
+          if (val === -1) {
+            cell.classList.add('empty');
+          } else {
+            cell.textContent = val;
+            if ((val === targetMonth) || (val === targetDay)) {
+              cell.classList.add('selected');
+            } else if (placements && placements[r][c] !== -1) {
+              cell.classList.add(`p-${placements[r][c]}`);
+            }
+          }
+          gridEl.appendChild(cell);
+        }
+      }
+    }
+
+    // Matrix / Piece transformations (rotations & flips)
+    function normalizePiece(coords) {
+      let minR = Math.min(...coords.map(c => c[0]));
+      let minC = Math.min(...coords.map(c => c[1]));
+      return coords.map(([r, c]) => [r - minR, c - minC]).sort((a,b) => a[0] - b[0] || a[1] - b[1]);
+    }
+
+    function generateOrientations(piece) {
+      let orientations = [];
+      let current = piece;
+
+      for (let flip = 0; flip < 2; flip++) {
+        for (let rot = 0; rot < 4; rot++) {
+          let norm = normalizePiece(current);
+          let key = JSON.stringify(norm);
+          if (!orientations.some(o => JSON.stringify(o) === key)) {
+            orientations.push(norm);
+          }
+          // Rotate 90 deg
+          current = current.map(([r, c]) => [c, -r]);
+        }
+        // Flip
+        current = piece.map(([r, c]) => [r, -c]);
+      }
+      return orientations;
+    }
+
+    const ALL_PIECE_ORIENTATIONS = RAW_PIECES.map(generateOrientations);
+
+    // Backtracking Solver
+    function solvePuzzle(monthStr, dayNum) {
+      // 1. Build valid board mask
+      let board = Array(7).fill(0).map(() => Array(7).fill(-1));
+      let emptyCells = 0;
+
+      for (let r = 0; r < 7; r++) {
+        for (let c = 0; c < 7; c++) {
+          let val = BOARD_LAYOUT[r][c];
+          if (val !== -1 && val !== monthStr && val !== dayNum) {
+            board[r][c] = 0; // Needs covering
+            emptyCells++;
+          }
+        }
+      }
+
+      let solutions = [];
+      let currentBoard = Array(7).fill(0).map(() => Array(7).fill(-1));
+
+      function place(pieceIdx, remainingPieces) {
+        if (remainingPieces.length === 0) {
+          solutions.push(currentBoard.map(row => [...row]));
+          return;
+        }
+
+        // Find first empty slot needing coverage
+        let targetR = -1, targetC = -1;
+        for (let r = 0; r < 7; r++) {
+          for (let c = 0; c < 7; c++) {
+            if (board[r][c] === 0 && currentBoard[r][c] === -1) {
+              targetR = r;
+              targetC = c;
+              break;
+            }
+          }
+          if (targetR !== -1) break;
+        }
+
+        if (targetR === -1) return;
+
+        // Try placing each remaining piece
+        for (let i = 0; i < remainingPieces.length; i++) {
+          let pIdx = remainingPieces[i];
+          let orientations = ALL_PIECE_ORIENTATIONS[pIdx];
+
+          for (let shape of orientations) {
+            // Anchor shape to targetR, targetC
+            let canPlace = true;
+            for (let [dr, dc] of shape) {
+              let nr = targetR + dr;
+              let nc = targetC + dc;
+              if (nr < 0 || nr >= 7 || nc < 0 || nc >= 7 || board[nr][nc] !== 0 || currentBoard[nr][nc] !== -1) {
+                canPlace = false;
+                break;
+              }
+            }
+
+            if (canPlace) {
+              // Apply
+              for (let [dr, dc] of shape) {
+                currentBoard[targetR + dr][targetC + dc] = pIdx;
+              }
+
+              let nextRemaining = remainingPieces.filter((_, idx) => idx !== i);
+              place(pIdx, nextRemaining);
+
+              // Backtrack
+              for (let [dr, dc] of shape) {
+                currentBoard[targetR + dr][targetC + dc] = -1;
+              }
+            }
+          }
+        }
+      }
+
+      let pieceIndices = [0, 1, 2, 3, 4, 5, 6, 7];
+      place(0, pieceIndices);
+      return solutions;
+    }
+
+    // UI Event Handlers
+    function triggerSolve() {
+      const selectedMonthIdx = parseInt(monthSelect.value);
+      const selectedMonth = MONTHS[selectedMonthIdx];
+      const selectedDay = parseInt(daySelect.value);
+
+      statusEl.textContent = "Calculating solutions...";
+      
+      // Delay slightly for render update
+      setTimeout(() => {
+        currentSolutions = solvePuzzle(selectedMonth, selectedDay);
+        currentSolutionIndex = 0;
+
+        if (currentSolutions.length > 0) {
+          statusEl.textContent = `Found ${currentSolutions.length} solution(s)!`;
+          displayCurrentSolution();
+        } else {
+          statusEl.textContent = "No valid configurations found for this date.";
+          renderBoard(null, selectedMonth, selectedDay);
+          updateControls();
+        }
+      }, 50);
+    }
+
+    function displayCurrentSolution() {
+      const selectedMonth = MONTHS[parseInt(monthSelect.value)];
+      const selectedDay = parseInt(daySelect.value);
+
+      renderBoard(currentSolutions[currentSolutionIndex], selectedMonth, selectedDay);
+      updateControls();
+    }
+
+    function updateControls() {
+      const total = currentSolutions.length;
+      if (total > 0) {
+        solutionCountEl.textContent = `Solution ${currentSolutionIndex + 1} of ${total}`;
+        prevSolBtn.disabled = currentSolutionIndex === 0;
+        nextSolBtn.disabled = currentSolutionIndex === total - 1;
+
+        // Rate difficulty: Fewer solutions = harder puzzle (1-5 stars)
+        let stars = "★☆☆☆☆";
+        if (total < 10) stars = "★★★★★";
+        else if (total < 25) stars = "★★★★☆";
+        else if (total < 50) stars = "★★★☆☆";
+        else if (total < 100) stars = "★★☆☆☆";
+        else stars = "★☆☆☆☆";
+
+        starRatingEl.textContent = stars;
+      } else {
+        solutionCountEl.textContent = "Solution 0 of 0";
+        prevSolBtn.disabled = true;
+        nextSolBtn.disabled = true;
+        starRatingEl.textContent = "☆☆☆☆☆";
+      }
+    }
+
+    function nextDay() {
+      let curM = parseInt(monthSelect.value);
+      let curD = parseInt(daySelect.value);
+      let maxDays = DAYS_IN_MONTH[curM];
+
+      if (curD < maxDays) {
+        daySelect.value = curD + 1;
+      } else {
+        monthSelect.value = (curM + 1) % 12;
+        updateDayDropdown();
+        daySelect.value = 1;
+      }
+      triggerSolve();
+    }
+
+    solveBtn.addEventListener('click', triggerSolve);
+    nextBtn.addEventListener('click', nextDay);
+
+    prevSolBtn.addEventListener('click', () => {
+      if (currentSolutionIndex > 0) {
+        currentSolutionIndex--;
+        displayCurrentSolution();
+      }
+    });
+
+    nextSolBtn.addEventListener('click', () => {
+      if (currentSolutionIndex < currentSolutions.length - 1) {
+        currentSolutionIndex++;
+        displayCurrentSolution();
+      }
+    });
+
+    // Initial board setup
+    renderBoard(null, MONTHS[0], 1);
+  </script>
+</body>
+</html>
