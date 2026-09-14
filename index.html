@@ -1,4 +1,4 @@
-m<!DOCTYPE html>
+I m<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -559,7 +559,7 @@ function renderDifficulty(){
   let empty = '☆'.repeat(5-stars);
   starsEl.innerHTML = filled + '<span class="empty">'+empty+'</span>';
   const countText = state.capped ? (MAX_SOLUTIONS+'+') : n;
-  const labels = {1:'Easy',2:'Challenging',3:'Hard',4:'Tricky',5:'Brutal'}:n ;
+  const labels = {1:'Easy',2:'Challenging',3:'Hard',4:'Tricky',5:'Brutal'} ;
   diffLabelEl.textContent = `${labels[stars]} - ${countText} solution${n===1?'':'s'}`;
 }
 
