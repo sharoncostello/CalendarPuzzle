@@ -539,10 +539,10 @@ function starRating(n, capped){
   // n = number of solutions  (fewer = harder)
   let stars;
   if(n<=0) stars = 0;
-  else if(capped || n>=100) stars = 1;
-  else if(n>=70) stars = 2;
-  else if(n>=40) stars = 3;
-  else if(n>=30) stars = 4;
+  else if(capped || n>=293) stars = 1;
+  else if(n>=220) stars = 2;
+  else if(n>=147) stars = 3;
+  else if(n>=74) stars = 4;
   else stars = 5;
   return stars;
 }
